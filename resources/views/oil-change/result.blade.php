@@ -3,15 +3,24 @@
 @section('title', 'Oil Change Result')
 
 @section('content')
+    <h1>Oil Change Result</h1>
+
     @if ($check->is_due_for_oil_change)
-        <p>Your car is due for an oil change.</p>
+        <p class="message message--due">Your car is due for an oil change.</p>
     @else
-        <p>Your car is not due for an oil change.</p>
+        <p class="message message--not-due">Your car is not due for an oil change.</p>
     @endif
 
-    <p>{{ $check->current_odometer }}</p>
-    <p>{{ $check->previous_odometer }}</p>
-    <p>{{ $check->previous_change_date->format('Y-m-d') }}</p>
+    <dl class="details">
+        <dt>Current Odometer</dt>
+        <dd>{{ $check->current_odometer }}</dd>
 
-    <a href="{{ route('home') }}">Check another car</a>
+        <dt>Previous Odometer</dt>
+        <dd>{{ $check->previous_odometer }}</dd>
+
+        <dt>Date of Previous Oil Change</dt>
+        <dd>{{ $check->previous_change_date->format('Y-m-d') }}</dd>
+    </dl>
+
+    <a class="button" href="{{ route('home') }}">Check another car</a>
 @endsection
