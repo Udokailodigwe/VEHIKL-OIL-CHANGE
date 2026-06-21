@@ -23,8 +23,8 @@ class OilChangeController extends Controller
         return redirect()->route('result.show', $check);
     }
 
-    public function show(OilChangeCheck $oilChangeCheck)
+    public function show(OilChangeCheck $oilChangeCheck): View
     {
-        //
+        return view('oil-change.result', ['check' => $oilChangeCheck]);
     }
 }
