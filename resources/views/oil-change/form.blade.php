@@ -3,7 +3,7 @@
 @section('title', 'Oil Change Check')
 
 @section('content')
-    <h1>Oil Change Check</h1>
+    <h1>Vehikl Oil Change Checker</h1>
 
     <form method="POST" action="{{ route('check.store') }}">
         @csrf
