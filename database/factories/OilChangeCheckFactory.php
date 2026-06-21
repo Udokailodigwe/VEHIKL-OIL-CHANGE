@@ -18,7 +18,10 @@ class OilChangeCheckFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'current_odometer' => 15000,
+            'previous_odometer' => 10000,
+            'previous_change_date' => now()->subMonths(1),
+            'is_due_for_oil_change' => true,
         ];
     }
 }
