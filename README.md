@@ -1,84 +1,78 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# VEHIKL Oil Change Check
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A small Laravel app that checks whether a car is due for an oil change based on distance driven (5,000 km) or time since the last change (6 months).
 
 ## Setup
 
-```bash
-git clone https://github.com/Udokailodigwe/VEHIKL-OIL-CHANGE.git
-cd VEHIKL-OIL-CHANGE
-composer install
-cp .env.example .env
-touch database/database.sqlite
-php artisan migrate
-php artisan serve
-```
+These steps assume a fresh clone. PHP **8.2+** and [Composer](https://getcomposer.org/) must be installed.
 
-## Running tests
+1. **Clone the repository**
+  ```bash
+   git clone https://github.com/Udokailodigwe/VEHIKL-OIL-CHANGE.git
+   cd VEHIKL-OIL-CHANGE
+  ```
+2. **Install PHP dependencies**
+  ```bash
+   composer install
+  ```
+3. **Create your environment file**
+  ```bash
+   cp .env.example .env
+   php artisan key:generate
+  ```
+   On Windows (PowerShell):
+   The default `.env` uses SQLite (`DB_CONNECTION=sqlite`). MySQL lines in `.env.example` can stay commented out.
+4. **Create the SQLite database file**
+  ```bash
+   touch database/database.sqlite
+  ```
+   On Windows (PowerShell):
+5. **Run migrations**
+  ```bash
+   php artisan migrate
+  ```
+6. **Start the development server**
+  ```bash
+   php artisan serve
+  ```
+7. **Open the app**
+  Visit [http://localhost:8000](http://localhost:8000), submit the form, and you will be redirected to a result page.
+
+## Run tests
 
 ```bash
 php artisan test
 ```
 
-## About Laravel
+CI runs the same command on push and pull requests to `main`.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## App structure
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### FormRequest vs inline validation
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Validation lives in `StoreOilChangeCheckRequest` instead of inside the controller. That keeps HTTP entry points thin, makes rules reusable and easy to find, and lets feature tests exercise validation through a real POST without duplicating rule logic in the controller.
 
-## Learning Laravel
+### Domain logic on the model for unit test isolation
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+`isDueByKm()`, `isDueByDate()`, and `isDue()` live on `OilChangeCheck`. Unit tests can construct a model in memory and assert business rules without routing, HTTP, or the database. The controller only orchestrates: validate, compute due status, persist, redirect.
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+### Thin controller
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+`OilChangeController` delegates validation to the FormRequest, due logic to the model, and rendering to Blade views. Each action has a single job: show the form, store a check, or show a result.
 
-## Laravel Sponsors
+### TDD commit order (tests before controller)
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+Work was done in small RED/GREEN steps: failing tests first (unit domain rules, validation, form, store, result), then the minimum code to make them pass. That kept scope tight and made regressions obvious in CI at each step.
 
-### Premium Partners
+### Stored `is_due_for_oil_change` for stable refresh
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+The due flag is calculated once in `store()` and saved on the record. The result page reads that stored value instead of recalculating on every request. Refreshing `/result/{id}` always shows the same answer, even if “six months ago” would evaluate differently tomorrow.
 
-## Contributing
+### Assumptions — “exactly 6 months” boundary
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+- **Distance:** due when `current_odometer - previous_odometer >= 5000` (5,000 km exactly counts as due).
+- **Time:** due when `previous_change_date` is **on or before** the date six months ago (`lte(now()->subMonths(6))`). A change dated exactly six months ago is treated as due.
+- **Combined:** due if **either** threshold is met.
+- **Validation:** `previous_change_date` must be in the past (`before:today`); today or future dates are rejected.
+- **Persistence:** result messaging uses the stored `is_due_for_oil_change` from submit time, not a live recalculation.
 
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
