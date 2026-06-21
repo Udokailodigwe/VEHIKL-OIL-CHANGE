@@ -5,3 +5,5 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [OilChangeController::class, 'create'])->name('home');
 Route::post('/check', [OilChangeController::class, 'store'])->name('check.store');
+Route::get('/result/{oilChangeCheck}', [OilChangeController::class, 'show'])
+    ->name('result.show');

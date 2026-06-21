@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreOilChangeCheckRequest;
+use App\Models\OilChangeCheck;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
@@ -15,6 +16,15 @@ class OilChangeController extends Controller
 
     public function store(StoreOilChangeCheckRequest $request): RedirectResponse
     {
-        return back();
+        $check = new OilChangeCheck($request->validated());
+        $check->is_due_for_oil_change = $check->isDue();
+        $check->save();
+
+        return redirect()->route('result.show', $check);
+    }
+
+    public function show(OilChangeCheck $oilChangeCheck)
+    {
+        //
     }
 }
