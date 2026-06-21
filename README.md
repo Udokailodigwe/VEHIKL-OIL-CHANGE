@@ -7,6 +7,24 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## Setup
+
+```bash
+git clone https://github.com/Udokailodigwe/VEHIKL-OIL-CHANGE.git
+cd VEHIKL-OIL-CHANGE
+composer install
+cp .env.example .env
+touch database/database.sqlite
+php artisan migrate
+php artisan serve
+```
+
+## Running tests
+
+```bash
+php artisan test
+```
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
